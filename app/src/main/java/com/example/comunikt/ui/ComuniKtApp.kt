@@ -35,6 +35,10 @@ fun ComuniKtApp() {
     }
 
     var rememberedEmail by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    val users = remember {
         mutableStateListOf<User>()
     }
 
@@ -134,7 +138,7 @@ fun ComuniKtApp() {
             },
         )
 
-        AuthScreen.RECOVER_PASSWORD -> RecoverPasswordScreen(
+        AuthScreen.RECOVER_PASSWORD -> RecoverPassScreen(
             onBack = {
                 currentScreen = AuthScreen.LOGIN
             },
