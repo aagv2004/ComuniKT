@@ -12,11 +12,13 @@ import com.example.comunikt.model.User
 import com.example.comunikt.ui.screens.LoginScreen
 import com.example.comunikt.ui.screens.RecoverPassScreen
 import com.example.comunikt.ui.screens.RegisterScreen
+import com.example.comunikt.ui.screens.HomeScreen
 
 enum class AuthScreen {
     LOGIN,
     REGISTER,
     RECOVER_PASSWORD,
+    HOME
 }
 
 data class UiResult(
@@ -38,11 +40,29 @@ fun ComuniKtApp() {
         mutableStateOf("")
     }
 
+    var loggedInUserName by rememberSaveable {
+        mutableStateOf<String?>(null)
+    }
+
+    var loggedInProfileType by rememberSaveable {
+        mutableStateOf<String?>(null)
+    }
+
+    var loggedInCommunicationMode by rememberSaveable {
+        mutableStateOf<String?>(null)
+    }
+
     val users = remember {
         mutableStateListOf<User>()
     }
 
     BackHandler(enabled = currentScreen != AuthScreen.LOGIN) {
+        if (currentScreen == AuthScreen.HOME) {
+            loggedInUserName = null
+            loggedInProfileType = null
+            loggedInCommunicationMode = null
+        }
+
         currentScreen = AuthScreen.LOGIN
     }
 
@@ -62,6 +82,11 @@ fun ComuniKtApp() {
                 }
 
                 if (user != null) {
+                    loggedInUserName = user.name
+                    loggedInProfileType = user.profileType
+                    loggedInCommunicationMode = user.communicationMode
+                    currentScreen = AuthScreen.HOME
+
                     UiResult(
                         successful = true,
                         message = "Inicio de sesión correcto. Bienvenido ${user.name}.",
@@ -162,6 +187,18 @@ fun ComuniKtApp() {
                         message = "No existe un usuario con ese correo.",
                     )
                 }
+            },
+        )
+
+        AuthScreen.HOME -> HomeScreen(
+            userName = loggedInUserName ?: "Usuario",
+            profileType = loggedInProfileType ?: "Perfil no definido",
+            communicationMode = loggedInCommunicationMode ?: "Sin preferencia",
+            onLogout = {
+                loggedInUserName = null
+                loggedInProfileType = null
+                loggedInCommunicationMode = null
+                currentScreen = AuthScreen.LOGIN
             },
         )
     }
