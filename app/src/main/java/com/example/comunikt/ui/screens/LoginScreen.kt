@@ -72,6 +72,11 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
+            text = "ComuniKT",
+            style = MaterialTheme.typography.titleLarge,
+        )
+
+        Text(
             text = "Iniciar Sesión",
             style = MaterialTheme.typography.headlineMedium,
         )
