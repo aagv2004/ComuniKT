@@ -1,5 +1,6 @@
 package com.example.comunikt.ui.screens
 
+import android.util.Patterns
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -281,7 +282,7 @@ fun RegisterScreen(
                         "Completa todos los campos obligatorios."
                     }
 
-                    !email.contains("@") -> {
+                    !email.esCorreoValido() -> {
                         "Ingresa un correo electrónico válido."
                     }
 
@@ -329,4 +330,8 @@ fun RegisterScreen(
             )
         }
     }
+}
+
+private fun String.esCorreoValido(): Boolean {
+    return Patterns.EMAIL_ADDRESS.matcher(this.trim()).matches()
 }
