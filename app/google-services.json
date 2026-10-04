@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "423162693391",
+    "project_id": "comunikt-778e6",
+    "storage_bucket": "comunikt-778e6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:423162693391:android:c54923d4fda11c75dba07a",
+        "android_client_info": {
+          "package_name": "com.example.comunikt"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTdM2FVAmJdlYPBH6jeVZ9LLkFNykKg3k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
