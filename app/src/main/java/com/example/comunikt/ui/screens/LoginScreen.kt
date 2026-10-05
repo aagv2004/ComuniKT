@@ -1,5 +1,6 @@
 package com.example.comunikt.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -33,15 +35,20 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.comunikt.ui.UiResult
 
+
 @Composable
 fun LoginScreen(
     initialEmail: String,
     notice: String?,
-    onLogin: (String, String) -> UiResult,
+    onLogin: (String, String, (UiResult) -> Unit) -> Unit,
     onRememberEmail: (Boolean, String) -> Unit,
     onRegisterClick: () -> Unit,
     onRecoverClick: () -> Unit,
 ) {
+    var isSubmitting by remember {
+        mutableStateOf(false)
+    }
+
     var email by rememberSaveable {
         mutableStateOf(initialEmail)
     }
@@ -60,6 +67,10 @@ fun LoginScreen(
 
     var resultSuccessful by rememberSaveable {
         mutableStateOf(false)
+    }
+
+    BackHandler(enabled = isSubmitting) {
+        // Esperamos la respuesta antes de salir.
     }
 
     Column(
@@ -90,6 +101,7 @@ fun LoginScreen(
                 resultMessage = null
             },
             modifier = Modifier.fillMaxWidth(),
+            enabled = !isSubmitting,
             label = {
                 Text("Correo electrónico")
             },
@@ -109,6 +121,7 @@ fun LoginScreen(
                 resultMessage = null
             },
             modifier = Modifier.fillMaxWidth(),
+            enabled = !isSubmitting,
             label = {
                 Text("Contraseña")
             },
@@ -123,7 +136,7 @@ fun LoginScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {
+                .clickable(enabled = !isSubmitting) {
                     rememberEmail = !rememberEmail
                 },
             verticalAlignment = Alignment.CenterVertically,
@@ -133,6 +146,7 @@ fun LoginScreen(
                 onCheckedChange = {
                     rememberEmail = it
                 },
+                enabled = !isSubmitting,
             )
 
             Text("Recordar Correo")
@@ -144,29 +158,46 @@ fun LoginScreen(
                     resultSuccessful = false
                     resultMessage = "Completa el correo y la contraseña."
                 } else {
-                    onRememberEmail(rememberEmail, email)
+                    isSubmitting = true
+                    resultSuccessful = false
+                    resultMessage = null
 
-                    val result = onLogin(email, password)
-                    resultSuccessful = result.successful
-                    resultMessage = result.message
+                    onRememberEmail(rememberEmail, email.trim())
+
+                    onLogin(email.trim(), password) { result ->
+                        isSubmitting = false
+                        resultSuccessful = result.successful
+                        resultMessage = if (result.successful) null else result.message
+
+                        if (result.successful) {
+                            password = ""
+                        }
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth(),
+            enabled = !isSubmitting,
         ) {
-            Text("Ingresar")
+            Text(
+                if (isSubmitting) {
+                    "Ingresando…"
+                } else {
+                    "Ingresar"
+                },
+            )
         }
 
-        notice?.let {
+        notice?.let { message ->
             Text(
-                text = it,
+                text = message,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = 12.dp),
             )
         }
 
-        resultMessage?.let {
+        resultMessage?.let { message ->
             Text(
-                text = it,
+                text = message,
                 color = if (resultSuccessful) {
                     MaterialTheme.colorScheme.primary
                 } else {
@@ -179,6 +210,7 @@ fun LoginScreen(
         TextButton(
             onClick = onRecoverClick,
             modifier = Modifier.align(Alignment.CenterHorizontally),
+            enabled = !isSubmitting,
         ) {
             Text("Recuperar contraseña")
         }
@@ -186,6 +218,7 @@ fun LoginScreen(
         TextButton(
             onClick = onRegisterClick,
             modifier = Modifier.align(Alignment.CenterHorizontally),
+            enabled = !isSubmitting,
         ) {
             Text("Crear una cuenta")
         }

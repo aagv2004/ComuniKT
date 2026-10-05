@@ -27,12 +27,23 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.comunikt.ui.UiResult
+import android.util.Patterns
+import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.remember
 
 @Composable
 fun RecoverPassScreen(
     onBack: () -> Unit,
-    onRecover: (String) -> UiResult,
+    onRecover: (String, (UiResult) -> Unit) -> Unit,
 ) {
+    var isSubmitting by remember {
+        mutableStateOf(false)
+    }
+
+    BackHandler(enabled = isSubmitting) {
+        // Esperamos la respuesta antes de salir.
+    }
+
     var email by rememberSaveable {
         mutableStateOf("")
     }
@@ -54,7 +65,7 @@ fun RecoverPassScreen(
             .padding(24.dp),
         verticalArrangement = Arrangement.Center,
     ) {
-        TextButton(onClick = onBack) {
+        TextButton(onClick = onBack, enabled = !isSubmitting) {
             Text("Volver")
         }
 
@@ -77,6 +88,7 @@ fun RecoverPassScreen(
                 resultMessage = null
             },
             modifier = Modifier.fillMaxWidth(),
+            enabled = !isSubmitting,
             label = {
                 Text("Correo electrónico")
             },
@@ -91,18 +103,27 @@ fun RecoverPassScreen(
 
         Button(
             onClick = {
-                if (email.isBlank() || !email.contains("@")) {
+                val normalizedEmail = email.trim()
+
+                if (!Patterns.EMAIL_ADDRESS.matcher(normalizedEmail).matches()) {
                     resultSuccessful = false
                     resultMessage = "Ingresa un correo electrónico válido."
                 } else {
-                    val result = onRecover(email)
-                    resultSuccessful = result.successful
-                    resultMessage = result.message
+                    isSubmitting = true
+                    resultSuccessful = false
+                    resultMessage = null
+
+                    onRecover(normalizedEmail) { result ->
+                        isSubmitting = false
+                        resultSuccessful = result.successful
+                        resultMessage = result.message
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth(),
+            enabled = !isSubmitting,
         ) {
-            Text("Enviar")
+            Text(if (isSubmitting) "Enviando…" else "Enviar")
         }
 
         resultMessage?.let {

@@ -4,24 +4,32 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.comunikt.model.User
 import com.example.comunikt.ui.screens.LoginScreen
 import com.example.comunikt.ui.screens.RecoverPassScreen
 import com.example.comunikt.ui.screens.RegisterScreen
 import com.example.comunikt.ui.screens.HomeScreen
+import com.google.firebase.FirebaseNetworkException
+import com.google.firebase.FirebaseTooManyRequestsException
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
+import com.example.comunikt.ui.screens.WriteScreen
 
 enum class AuthScreen(val route: String) {
     LOGIN("login"),
     REGISTER("register"),
     RECOVER_PASSWORD("recover_password"),
-    HOME("home")
+    HOME("home"),
+    WRITE("write")
 }
 
 data class UiResult(
@@ -33,6 +41,13 @@ data class UiResult(
 fun ComuniKtApp() {
     val navController = rememberNavController()
 
+    val auth = remember {
+        FirebaseAuth.getInstance()
+    }
+
+    val firestore = remember {
+        FirebaseFirestore.getInstance()
+    }
 
     var loginNotice by rememberSaveable {
         mutableStateOf<String?>(null)
@@ -54,11 +69,6 @@ fun ComuniKtApp() {
         mutableStateOf<String?>(null)
     }
 
-    val users = remember {
-        mutableStateListOf<User>()
-    }
-
-
     NavHost(
         navController = navController,
         startDestination = AuthScreen.LOGIN.route,
@@ -68,33 +78,89 @@ fun ComuniKtApp() {
                 initialEmail = rememberedEmail,
                 notice = loginNotice,
 
-                onLogin = { email, password ->
+                onLogin = { email, password, onResult ->
                     loginNotice = null
 
-                    val user = users.firstOrNull {
-                        it.email.equals(
-                            other = email.trim(),
-                            ignoreCase = true,
-                        ) && it.password == password
-                    }
-
-                    if (user != null) {
-                        loggedInUserName = user.name
-                        loggedInProfileType = user.profileType
-                        loggedInCommunicationMode = user.communicationMode
-                        navController.navigate(AuthScreen.HOME.route) {
-                            launchSingleTop = true
+                    auth.signInWithEmailAndPassword(
+                        email.trim(),
+                        password,
+                    ).addOnCompleteListener { task ->
+                        val firebaseUser = if (task.isSuccessful) {
+                            task.result?.user
+                        } else {
+                            null
                         }
 
-                        UiResult(
-                            successful = true,
-                            message = "Inicio de sesión correcto. Bienvenido ${user.name}.",
-                        )
-                    } else {
-                        UiResult(
-                            successful = false,
-                            message = "Correo o contraseña incorrectos.",
-                        )
+                        if (firebaseUser != null) {
+                            firestore.collection("users")
+                                .document(firebaseUser.uid)
+                                .get(Source.SERVER)
+                                .addOnCompleteListener { profileTask ->
+                                    val profile = if (profileTask.isSuccessful) {
+                                        profileTask.result
+                                    } else {
+                                        null
+                                    }
+
+                                    if (profile == null) {
+                                        auth.signOut()
+
+                                        onResult(
+                                            UiResult(
+                                                successful = false,
+                                                message = "Las credenciales son válidas, pero no se pudo cargar el perfil. Revisa tu conexión e inténtalo nuevamente.",
+                                            ),
+                                        )
+                                    } else {
+                                        if (profile.exists()) {
+                                            loggedInUserName =
+                                                profile.getString("name")
+                                                    ?: firebaseUser.email
+                                                            ?: "Usuario"
+
+                                            loggedInProfileType =
+                                                profile.getString("profileType")
+
+                                            loggedInCommunicationMode =
+                                                profile.getString("communicationMode")
+                                        } else {
+                                            // Las cuentas anteriores a este cambio no tienen perfil.
+                                            loggedInUserName = firebaseUser.email ?: "Usuario"
+                                            loggedInProfileType = null
+                                            loggedInCommunicationMode = null
+                                        }
+
+                                        onResult(
+                                            UiResult(
+                                                successful = true,
+                                                message = "Inicio de sesión correcto.",
+                                            ),
+                                        )
+
+                                        navController.navigate(AuthScreen.HOME.route) {
+                                            launchSingleTop = true
+                                        }
+                                    }
+                                }
+                        } else {
+                            val message = when (task.exception) {
+                                is FirebaseNetworkException ->
+                                    "No se pudo conectar. Revisa tu conexión e inténtalo nuevamente."
+
+                                is FirebaseTooManyRequestsException ->
+                                    "Se realizaron demasiados intentos. Espera y vuelve a intentarlo."
+
+                                else ->
+                                    "No se pudo iniciar sesión. Revisa el correo y la contraseña."
+                            }
+
+                            onResult(
+                                UiResult(
+                                    successful = false,
+                                    message = message,
+                                ),
+                            )
+                        }
                     }
                 },
 
@@ -124,44 +190,104 @@ fun ComuniKtApp() {
 
         composable(AuthScreen.REGISTER.route) {
             RegisterScreen(
-                registeredUserCount = users.size,
-
                 onBack = {
                     navController.popBackStack()
                 },
 
-                onRegister = { newUser ->
-                    when {
-                        users.size >= 5 -> {
-                            UiResult(
-                                successful = false,
-                                message = "Ya se alcanzó el máximo de cinco usuarios.",
-                            )
-                        }
+                onRegister = { newUser, onResult ->
+                    auth.createUserWithEmailAndPassword(
+                        newUser.email,
+                        newUser.password,
+                    ).addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            val firebaseUser = task.result?.user
 
-                        users.any {
-                            it.email.equals(
-                                other = newUser.email,
-                                ignoreCase = true,
-                            )
-                        } -> {
-                            UiResult(
-                                successful = false,
-                                message = "Ya existe una cuenta con este correo.",
-                            )
-                        }
+                            if (firebaseUser == null) {
+                                auth.signOut()
 
-                        else -> {
-                            users.add(newUser)
+                                onResult(
+                                    UiResult(
+                                        successful = false,
+                                        message = "No se pudo obtener la cuenta creada.",
+                                    ),
+                                )
+                            } else {
+                                val profile = mapOf(
+                                    "name" to newUser.name.trim(),
+                                    "email" to (firebaseUser.email ?: newUser.email.trim()),
+                                    "profileType" to newUser.profileType,
+                                    "communicationMode" to newUser.communicationMode,
+                                )
 
-                            loginNotice =
-                                "Cuenta creada correctamente. Ya puedes iniciar sesión."
+                                firestore.collection("users")
+                                    .document(firebaseUser.uid)
+                                    .set(profile)
+                                    .addOnCompleteListener { profileTask ->
+                                        if (profileTask.isSuccessful) {
+                                            auth.signOut()
 
-                            navController.popBackStack()
+                                            onResult(
+                                                UiResult(
+                                                    successful = true,
+                                                    message = "Cuenta y perfil creados correctamente.",
+                                                ),
+                                            )
 
-                            UiResult(
-                                successful = true,
-                                message = "Cuenta creada correctamente.",
+                                            loginNotice =
+                                                "Cuenta y perfil creados correctamente. Ya puedes iniciar sesión."
+
+                                            navController.popBackStack(
+                                                route = AuthScreen.LOGIN.route,
+                                                inclusive = false,
+                                            )
+                                        } else {
+                                            // Revertimos solo la cuenta que acaba de crearse.
+                                            firebaseUser.delete()
+                                                .addOnCompleteListener { rollbackTask ->
+                                                    auth.signOut()
+
+                                                    val message = if (rollbackTask.isSuccessful) {
+                                                        "No se pudo guardar el perfil. El registro se revirtió; revisa tu conexión e inténtalo nuevamente."
+                                                    } else {
+                                                        "La cuenta se creó, pero no se guardó el perfil ni se pudo revertir el registro. No vuelvas a registrarla: debemos completar su perfil."
+                                                    }
+
+                                                    onResult(
+                                                        UiResult(
+                                                            successful = false,
+                                                            message = message,
+                                                        ),
+                                                    )
+                                                }
+                                        }
+                                    }
+                            }
+                        } else {
+                            val message = when (task.exception) {
+                                is FirebaseAuthWeakPasswordException ->
+                                    "La contraseña no cumple la política de seguridad del proyecto."
+
+                                is FirebaseAuthUserCollisionException ->
+                                    "Ya existe una cuenta con este correo."
+
+                                is FirebaseAuthInvalidCredentialsException ->
+                                    "El correo electrónico no es válido."
+
+                                is FirebaseNetworkException ->
+                                    "No se pudo conectar. Revisa tu conexión e inténtalo nuevamente."
+
+                                is FirebaseTooManyRequestsException ->
+                                    "Se realizaron demasiados intentos. Espera y vuelve a intentarlo."
+
+                                else ->
+                                    "No se pudo crear la cuenta. Inténtalo nuevamente."
+                            }
+
+                            onResult(
+                                UiResult(
+                                    successful = false,
+                                    message = message,
+                                ),
                             )
                         }
                     }
@@ -175,32 +301,47 @@ fun ComuniKtApp() {
                     navController.popBackStack()
                 },
 
-                onRecover = { email ->
-                    val userExists = users.any {
-                        it.email.equals(
-                            other = email.trim(),
-                            ignoreCase = true,
-                        )
-                    }
+                onRecover = { email, onResult ->
+                    auth.sendPasswordResetEmail(email.trim())
+                        .addOnCompleteListener { task ->
+                            val message = if (task.isSuccessful) {
+                                "Si el correo corresponde a una cuenta, recibirás un enlace para cambiar la contraseña. Revisa también spam."
+                            } else {
+                                when (task.exception) {
+                                    is FirebaseNetworkException ->
+                                        "No se pudo conectar. Revisa tu conexión e inténtalo nuevamente."
 
-                    if (userExists) {
-                        UiResult(
-                            successful = true,
-                            message = "Código de recuperación enviado, revise su correo.",
-                        )
-                    } else {
-                        UiResult(
-                            successful = false,
-                            message = "No existe un usuario con ese correo.",
-                        )
-                    }
+                                    is FirebaseTooManyRequestsException ->
+                                        "Se realizaron demasiados intentos. Espera y vuelve a intentarlo."
+
+                                    else ->
+                                        "No se pudo procesar la solicitud. Inténtalo nuevamente."
+                                }
+                            }
+
+                            onResult(
+                                UiResult(
+                                    successful = task.isSuccessful,
+                                    message = message,
+                                ),
+                            )
+                        }
                 },
+            )
+        }
+
+        composable(AuthScreen.WRITE.route) {
+            WriteScreen(
+                onBack = {
+                    navController.popBackStack()
+                }
             )
         }
 
         composable(AuthScreen.HOME.route) {
             val cerrarSesion: () -> Unit = {
                 loggedInUserName = null
+                auth.signOut()
                 loggedInProfileType = null
                 loggedInCommunicationMode = null
 
@@ -221,6 +362,87 @@ fun ComuniKtApp() {
                 profileType = loggedInProfileType ?: "Perfil no definido",
                 communicationMode = loggedInCommunicationMode ?: "Sin preferencia",
                 onLogout = cerrarSesion,
+                onDeleteProfile = { onResult ->
+                    val currentUser = auth.currentUser
+
+                    if (currentUser == null) {
+                        onResult(
+                            UiResult(
+                                successful = false,
+                                message = "No hay una sesión válida. Vuelve a iniciar sesión.",
+                            ),
+                        )
+                    } else {
+                        firestore.collection("users")
+                            .document(currentUser.uid)
+                            .delete()
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    loggedInUserName = currentUser.email ?: "Usuario"
+                                    loggedInProfileType = null
+                                    loggedInCommunicationMode = null
+                                }
+
+                                onResult(
+                                    UiResult(
+                                        successful = task.isSuccessful,
+                                        message = if (task.isSuccessful) {
+                                            "Perfil eliminado. Tu cuenta de acceso se conserva."
+                                        } else {
+                                            "No se pudo eliminar el perfil. Revisa tu conexión e inténtalo nuevamente."
+                                        },
+                                    ),
+                                )
+                            }
+                    }
+                },
+                onSaveProfile = { name, profileType, communicationMode, onResult ->
+                    val currentUser = auth.currentUser
+                    val email = currentUser?.email
+
+                    if (currentUser == null || email == null) {
+                        onResult(
+                            UiResult(
+                                successful = false,
+                                message = "No hay una sesión válida. Vuelve a iniciar sesión.",
+                            ),
+                        )
+                    } else {
+                        val profile = mapOf(
+                            "name" to name,
+                            "email" to email,
+                            "profileType" to profileType,
+                            "communicationMode" to communicationMode,
+                        )
+
+                        firestore.collection("users")
+                            .document(currentUser.uid)
+                            .set(profile)
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    loggedInUserName = name
+                                    loggedInProfileType = profileType
+                                    loggedInCommunicationMode = communicationMode
+                                }
+
+                                onResult(
+                                    UiResult(
+                                        successful = task.isSuccessful,
+                                        message = if (task.isSuccessful) {
+                                            "Perfil guardado correctamente."
+                                        } else {
+                                            "No se pudo guardar el perfil. Revisa tu conexión y vuelve a intentarlo."
+                                        },
+                                    ),
+                                )
+                            }
+                    }
+                },
+                onWrite = {
+                    navController.navigate(AuthScreen.WRITE.route) {
+                        launchSingleTop = true
+                    }
+                },
             )
         }
     }

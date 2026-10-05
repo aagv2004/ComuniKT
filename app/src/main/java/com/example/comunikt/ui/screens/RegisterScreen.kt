@@ -38,13 +38,22 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.comunikt.model.User
 import com.example.comunikt.ui.UiResult
+import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.remember
 
 @Composable
 fun RegisterScreen(
-    registeredUserCount: Int,
     onBack: () -> Unit,
-    onRegister: (User) -> UiResult,
+    onRegister: (User, (UiResult) -> Unit) -> Unit,
 ) {
+    var isSubmitting by remember {
+        mutableStateOf(false)
+    }
+
+    BackHandler(enabled = isSubmitting) {
+
+    }
+
     var name by rememberSaveable {
         mutableStateOf("")
     }
@@ -99,21 +108,16 @@ fun RegisterScreen(
             .imePadding()
             .padding(24.dp),
     ) {
-        TextButton(onClick = onBack) {
+        TextButton(
+            onClick = onBack,
+            enabled = !isSubmitting,
+        ) {
             Text("Volver")
         }
 
         Text(
             text = "Registro de usuario",
             style = MaterialTheme.typography.headlineMedium,
-        )
-
-        Text(
-            text = "Usuarios registrados: ${registeredUserCount}/5",
-            modifier = Modifier.padding(
-                top = 4.dp,
-                bottom = 16.dp,
-            ),
         )
 
         OutlinedTextField(
@@ -299,7 +303,9 @@ fun RegisterScreen(
                     }
 
                     else -> {
-                        val result = onRegister(
+                        isSubmitting = true
+
+                        onRegister(
                             User(
                                 name = name.trim(),
                                 email = email.trim(),
@@ -307,19 +313,24 @@ fun RegisterScreen(
                                 profileType = profileType,
                                 communicationMode = communicationMode,
                             ),
-                        )
+                        ) { result ->
+                            isSubmitting = false
 
-                        if (result.successful) {
-                            null
-                        } else {
-                            result.message
+                            errorMessage = if (result.successful) {
+                                null
+                            } else {
+                                result.message
+                            }
                         }
+
+                        null
                     }
                 }
             },
             modifier = Modifier.fillMaxWidth(),
+            enabled = !isSubmitting,
         ) {
-            Text("Registrarse")
+            Text(if (isSubmitting) "Creando cuenta..." else "Registrarse")
         }
 
         errorMessage?.let {
