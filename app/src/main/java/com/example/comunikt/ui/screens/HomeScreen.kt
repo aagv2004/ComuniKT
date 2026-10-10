@@ -49,6 +49,7 @@ fun HomeScreen(
     onWrite: () -> Unit,
     onSpeak: () -> Unit,
     onFindDevice: () -> Unit,
+    onHelp: () -> Unit,
     onSaveProfile: (
         String,
         String,
@@ -312,6 +313,15 @@ fun HomeScreen(
                     .typography
                     .titleLarge,
         )
+
+        OutlinedButton(
+            onClick = onHelp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp),
+        ) {
+            Text("Ayuda y tutorial de uso")
+        }
 
         Text(
             text =

@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.comunikt.ui.screens.HomeScreen
+import com.example.comunikt.ui.screens.HelpScreen
 import com.example.comunikt.ui.screens.LoginScreen
 import com.example.comunikt.ui.screens.RecoverPassScreen
 import com.example.comunikt.ui.screens.RegisterScreen
@@ -36,6 +37,7 @@ enum class AuthScreen(
     WRITE("write"),
     SPEAK("speak"),
     FIND_DEVICE("find_device"),
+    HELP("help"),
 }
 
 data class UiResult(
@@ -548,6 +550,16 @@ fun ComuniKtApp() {
         }
 
         composable(
+            AuthScreen.HELP.route,
+        ) {
+            HelpScreen(
+                onBack = {
+                    navController.popBackStack()
+                },
+            )
+        }
+
+        composable(
             AuthScreen.HOME.route,
         ) {
             val cerrarSesion:
@@ -778,6 +790,14 @@ fun ComuniKtApp() {
                             launchSingleTop =
                                 true
                         }
+                },
+
+                onHelp = {
+                    navController.navigate(
+                        AuthScreen.HELP.route,
+                    ) {
+                        launchSingleTop = true
+                    }
                 },
             )
         }
