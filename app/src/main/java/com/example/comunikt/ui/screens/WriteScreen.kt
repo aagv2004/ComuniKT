@@ -33,11 +33,14 @@ import java.util.Locale
 import java.util.UUID
 
 @Composable
-fun WriteScreen(onBack: () -> Unit) {
+fun WriteScreen(
+    onBack: () -> Unit,
+    initialMessage: String = "",
+) {
     val context = LocalContext.current.applicationContext
 
-    var message by rememberSaveable {
-        mutableStateOf("")
+    var message by rememberSaveable(initialMessage) {
+        mutableStateOf(initialMessage)
     }
 
     var notice by remember {

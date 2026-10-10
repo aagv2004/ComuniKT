@@ -56,30 +56,13 @@ fun RecoverPassScreen(
         mutableStateOf(false)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .navigationBarsPadding()
-            .imePadding()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
+    AuthLayout(
+        title = "Recuperar contraseña",
+        description = "Ingresa tu correo para recibir las instrucciones.",
+        onBack = onBack,
+        backEnabled = !isSubmitting,
+        centerContent = true,
     ) {
-        TextButton(onClick = onBack, enabled = !isSubmitting) {
-            Text("Volver")
-        }
-
-        Text(
-            text = "Recuperar contraseña",
-            style = MaterialTheme.typography.headlineMedium,
-        )
-
-        Text(
-            text = "Ingresa tu correo para recibir las instrucciones.",
-            modifier = Modifier.padding(top = 8.dp),
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
 
         OutlinedTextField(
             value = email,
