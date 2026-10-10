@@ -100,9 +100,20 @@ fun HelpScreen(
             steps = listOf(
                 "En el menú principal, selecciona Mi perfil.",
                 "Revisa o modifica tu nombre y preferencias de comunicación.",
-                "Presiona Guardar para registrar los cambios.",
+                "Presiona Guardar cambios para registrar los cambios.",
                 "Si necesitas recuperar tu contraseña, utiliza " +
                         "la opción disponible en la pantalla de acceso.",
+            ),
+        )
+
+        HelpSection(
+            title = "7. Frases rápidas",
+            steps = listOf(
+                "En el menú principal, busca la sección Frases rápidas.",
+                "Selecciona una frase que quieras comunicar.",
+                "ComuniKT abrirá Texto a voz con el mensaje precargado.",
+                "Puedes modificarlo o presionar Reproducir para escucharlo.",
+                "Después de reproducirlo correctamente, podrás consultarlo en el historial.",
             ),
         )
 

@@ -1,80 +1,69 @@
+
 package com.example.comunikt.ui.theme
 
-import android.app.Activity
-import android.graphics.Outline
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 
-private val LightColorScheme = lightColorScheme(
-    primary = PrimaryLight,
-    onPrimary = OnPrimaryLight,
-    primaryContainer = PrimaryContainerLight,
-    onPrimaryContainer = OnPrimaryContainerLight,
+private val LightColors = lightColorScheme(
+    primary = Color(0xFF087F8C),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFEAF5F6),
+    onPrimaryContainer = Color(0xFF17324D),
 
-    secondary = SecondaryLight,
-    onSecondary = OnSecondaryLight,
-    secondaryContainer = SecondaryContainerLight,
-    onSecondaryContainer = OnSecondaryContainerLight,
+    secondary = Color(0xFF17324D),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFEAF5F6),
+    onSecondaryContainer = Color(0xFF17324D),
 
-    background = BackgroundLight,
-    onBackground = OnBackgroundLight,
+    background = Color(0xFFF4F7FA),
+    onBackground = Color(0xFF17324D),
+    surface = Color.White,
+    onSurface = Color(0xFF17324D),
+    surfaceVariant = Color(0xFFEAF5F6),
+    onSurfaceVariant = Color(0xFF536477),
 
-    surface = SurfaceLight,
-    onSurface = OnSurfaceLight,
-    surfaceVariant = SurfaceVariantLight,
-    onSurfaceVariant = OnSurfaceVariantLight,
-
-    outline = OutlineLight,
-
-    error = ErrorLight,
-    onError = OnErrorLight
+    outline = Color(0xFFB9C9D4),
+    outlineVariant = Color(0xFFDDE5ED),
+    error = Color(0xFFB3261E),
+    onError = Color.White,
 )
 
-private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryDark,
-    onPrimary = OnPrimaryDark,
-    primaryContainer = OnPrimaryContainerDark,
-    onPrimaryContainer = OnPrimaryContainerDark,
+private val DarkColors = darkColorScheme(
+    primary = Color(0xFF4DB9C2),
+    onPrimary = Color(0xFF10222B),
+    primaryContainer = Color(0xFF195662),
+    onPrimaryContainer = Color(0xFFDDF4F5),
 
-    secondary = SecondaryDark,
-    onSecondary = OnSecondaryDark,
-    secondaryContainer = SecondaryContainerDark,
-    onSecondaryContainer = OnSecondaryContainerDark,
+    secondary = Color(0xFF274B65),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFF243C4F),
+    onSecondaryContainer = Color(0xFFE4F0F7),
 
-    background = BackgroundDark,
-    onBackground = OnBackgroundDark,
+    background = Color(0xFF101B29),
+    onBackground = Color(0xFFF0F7FC),
+    surface = Color(0xFF1B3042),
+    onSurface = Color(0xFFF0F7FC),
+    surfaceVariant = Color(0xFF243C4F),
+    onSurfaceVariant = Color(0xFFBDCDDA),
 
-    surface = SurfaceDark,
-    onSurface = OnSurfaceDark,
-    surfaceVariant = SurfaceVariantDark,
-    onSurfaceVariant = OnSurfaceVariantDark,
-
-    outline = OutlineDark,
-
-    error = ErrorDark,
-    onError = OnErrorDark,
+    outline = Color(0xFF748E9D),
+    outlineVariant = Color(0xFF385367),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
 )
+
 @Composable
 fun ComuniKTTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
-    val colors = if (darkTheme) {
-        DarkColorScheme
-    } else {
-        LightColorScheme
-    }
-
     MaterialTheme(
-        colorScheme = colors,
+        colorScheme = if (darkTheme) DarkColors else LightColors,
         typography = Typography,
-        content = content
+        content = content,
     )
 }

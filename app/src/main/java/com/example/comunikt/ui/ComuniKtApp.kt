@@ -1,6 +1,11 @@
 package com.example.comunikt.ui
 
 import androidx.activity.compose.BackHandler
+import android.net.Uri
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,9 +67,21 @@ fun ComuniKtApp() {
         mutableStateOf<String?>(null)
     }
 
-    var rememberedEmail by rememberSaveable {
-        mutableStateOf("")
+    val context = LocalContext.current
+
+    val preferences = remember(context) {
+        context.getSharedPreferences(
+            "comunikt_preferences",
+            Context.MODE_PRIVATE,
+        )
     }
+
+    var rememberedEmail by rememberSaveable {
+        mutableStateOf(
+            preferences.getString("remembered_email", "").orEmpty()
+        )
+    }
+
 
     var loggedInUserName by rememberSaveable {
         mutableStateOf<String?>(null)
@@ -245,19 +262,21 @@ fun ComuniKtApp() {
                         }
                 },
 
-                onRememberEmail = {
-                        shouldRemember,
-                        email ->
 
-                    rememberedEmail =
-                        if (
-                            shouldRemember
-                        ) {
-                            email.trim()
-                        } else {
-                            ""
-                        }
+                onRememberEmail = { shouldRemember, email ->
+                    val value = if (shouldRemember) {
+                        email.trim()
+                    } else {
+                        ""
+                    }
+
+                    rememberedEmail = value
+
+                    preferences.edit()
+                        .putString("remembered_email", value)
+                        .apply()
                 },
+
 
                 onRegisterClick = {
                     loginNotice = null
@@ -516,16 +535,28 @@ fun ComuniKtApp() {
             )
         }
 
+
         composable(
-            AuthScreen.WRITE.route,
-        ) {
+            route = "${AuthScreen.WRITE.route}?initialMessage={initialMessage}",
+            arguments = listOf(
+                navArgument("initialMessage") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+            ),
+        ) { backStackEntry ->
             WriteScreen(
+                initialMessage =
+                    backStackEntry.arguments
+                        ?.getString("initialMessage")
+                        .orEmpty(),
+
                 onBack = {
-                    navController
-                        .popBackStack()
+                    navController.popBackStack()
                 },
             )
         }
+
 
         composable(
             AuthScreen.SPEAK.route,
@@ -799,7 +830,16 @@ fun ComuniKtApp() {
                         launchSingleTop = true
                     }
                 },
-            )
+
+                onQuickPhrase = { phrase ->
+                    navController.navigate(
+                        "${AuthScreen.WRITE.route}?initialMessage=${Uri.encode(phrase)}",
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+
+                )
         }
     }
 }
