@@ -1,6 +1,7 @@
 
 package com.example.comunikt.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,10 +17,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -27,10 +30,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material3.MaterialTheme
+import com.example.comunikt.R
 
 
 private val Navy: Color
@@ -93,22 +98,17 @@ fun HomeDashboard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Box(
+
+            Image(
+                painter = painterResource(
+                    id = R.drawable.comunikt_mark
+                ),
+                contentDescription = "Logo de ComuniKT",
+                contentScale = ContentScale.Fit,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(NavyCard)
-                    .padding(
-                        horizontal = 14.dp,
-                        vertical = 9.dp,
-                    ),
-            ) {
-                Text(
-                    text = "C",
-                    color = Color.White,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(14.dp)),
+            )
 
             Column {
                 Text(

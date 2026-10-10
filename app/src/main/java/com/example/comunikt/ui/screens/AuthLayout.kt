@@ -3,6 +3,10 @@ package com.example.comunikt.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.example.comunikt.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -61,20 +65,18 @@ fun AuthLayout(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Box(
+
+            Image(
+                painter = painterResource(
+                    id = R.drawable.comunikt_mark
+                ),
+                contentDescription = "Logo de ComuniKT",
+                contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .size(56.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(colors.secondary),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "C",
-                    color = colors.onSecondary,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+                    .clip(RoundedCornerShape(14.dp)),
+            )
+
 
             Column {
                 Text(
